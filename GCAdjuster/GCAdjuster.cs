@@ -42,6 +42,12 @@ namespace GCAdjuster
             Log.LogInfo($"Current GC Mode: {GarbageCollector.GCMode} Full GC Point: {fullGCMark / 1024L / 1024L } ZG Amount: {zgGCMark / 1024L / 1024L}");
         }
 
+        void OnDestroy()
+        {
+            GarbageCollector.GCMode = GarbageCollector.Mode.Enabled;
+            Log.LogInfo($"Terminating GCAdjuster, restoring automated control");
+        }
+
         void Start()
         {
             fullGCMark = GCFullCollectionMark.Value * 1024L * 1024L;
