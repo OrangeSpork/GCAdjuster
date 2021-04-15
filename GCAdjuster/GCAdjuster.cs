@@ -19,7 +19,9 @@ namespace GCAdjuster
         public const string PluginName = "GCAdjuster";
         public const string Version = "1.0.0";
 
+        public static ConfigEntry<bool> GCAdjusterEnabled { get; set; }
         public static ConfigEntry<int> GCFullCollectionMark { get; set; }
+        public static ConfigEntry<int> GCFullCollectionCooldown { get; set; }
         public static ConfigEntry<int> GCZeroGenMark { get; set; }
         public static ConfigEntry<int> GCZeroGenMaxWait { get; set; }
         public static ConfigEntry<int> GCFullGenMaxWait { get; set; }
@@ -28,7 +30,9 @@ namespace GCAdjuster
 
         public GCAdjuster()
         {
-            GCFullCollectionMark = Config.Bind("Options", "Full GC Collection Mark (MB)", 8000, new ConfigDescription("Full GC when used memory hits this"));
+            GCAdjusterEnabled = Config.Bind("Options", "GC Adjuster Enabled", true);
+            GCFullCollectionMark = Config.Bind("Options", "Full GC Collection Mark (MB)", 12000, new ConfigDescription("Full GC when used memory hits this"));
+            GCFullCollectionCooldown = Config.Bind("Options", "Full GC Cooldown (S)", 10, new ConfigDescription("Pause between Full GC runs"));
             GCZeroGenMark = Config.Bind("Options", "Zero Gen GC Collection Mark (MB)", 4000, new ConfigDescription("Zero Gen GC when used memory allocates this above last collection amount"));
             GCZeroGenMaxWait = Config.Bind("Options", "Max Wait Between Zero Gen Collections (Secs)", 300, new ConfigDescription("Maximum wait for Zero Gen GC Collection, -1 for no max wait."));
             GCFullGenMaxWait = Config.Bind("Options", "Max Wait Between Full Gen Collections (Secs)", 900, new ConfigDescription("Maximum wait for Full Gen GC Collection, -1 for no max wait."));
@@ -69,13 +73,19 @@ namespace GCAdjuster
         {
             long mem = Profiler.GetMonoUsedSizeLong();
 
+            if (!GCAdjusterEnabled.Value && GarbageCollector.GCMode == GarbageCollector.Mode.Disabled)
+            {
+                GarbageCollector.GCMode = GarbageCollector.Mode.Enabled;
+                return;
+            }
+
             if (nextCollectAt == 0)
             {
                 nextCollectAt = mem + zgGCMark;
                 Log.LogInfo($"Next ZeroGen Collection at {nextCollectAt / 1024L / 1024L}");
             }
 
-            if (mem > fullGCMark)
+            if (mem > fullGCMark && (lastFullGCRun + GCFullCollectionCooldown.Value) < Time.realtimeSinceStartup)
             {
                 Log.LogInfo($"GC Full {mem / 1024L / 1024L} > {fullGCMark / 1024L / 1024L}");
                 GarbageCollector.GCMode = GarbageCollector.Mode.Enabled;
