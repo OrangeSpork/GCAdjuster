@@ -117,7 +117,7 @@ namespace GCAdjuster
                 lastGCRun = Time.realtimeSinceStartup;
                 nextCollectAt = 0;
             }            
-            else if (GarbageCollector.GCMode == GarbageCollector.Mode.Enabled)
+            else if (GCAdjusterEnabled.Value && GarbageCollector.GCMode == GarbageCollector.Mode.Enabled)
             {
                 GarbageCollector.GCMode = GarbageCollector.Mode.Disabled;
                 Log.LogInfo("GC Offline");
