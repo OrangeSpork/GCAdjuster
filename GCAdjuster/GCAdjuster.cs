@@ -78,6 +78,10 @@ namespace GCAdjuster
                 GarbageCollector.GCMode = GarbageCollector.Mode.Enabled;
                 return;
             }
+            if (!GCAdjusterEnabled.Value)
+            {
+                return;
+            }
 
             if (nextCollectAt == 0)
             {
@@ -117,7 +121,7 @@ namespace GCAdjuster
                 lastGCRun = Time.realtimeSinceStartup;
                 nextCollectAt = 0;
             }            
-            else if (GCAdjusterEnabled.Value && GarbageCollector.GCMode == GarbageCollector.Mode.Enabled)
+            else if (GarbageCollector.GCMode == GarbageCollector.Mode.Enabled)
             {
                 GarbageCollector.GCMode = GarbageCollector.Mode.Disabled;
                 Log.LogInfo("GC Offline");
